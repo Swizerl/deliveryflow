@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Вход — DeliveryFlow{% endblock %}
+{% block content %}
+<div class="form-card" style="margin-top:2rem">
+    <h1 style="font-size:1.5rem;font-weight:800;margin:0 0 .25rem;text-align:center">Вход</h1>
+    <p class="text-muted" style="text-align:center;margin:0 0 1.5rem;font-size:.9rem">Войдите, чтобы оформлять заказы</p>
+    {% if error %}<div class="alert-error" style="padding:.85rem 1rem;border-radius:var(--radius);margin-bottom:1rem;font-size:.9rem;border:1px solid #fecaca">{{ error }}</div>{% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group"><label for="username">Логин</label><input type="text" id="username" name="username" required autofocus></div>
+        <div class="form-group"><label for="password">Пароль</label><input type="password" id="password" name="password" required></div>
+        <button class="btn btn-primary btn-block" type="submit">Войти</button>
+    </form>
+    <p style="text-align:center;margin:1.25rem 0 0;font-size:.9rem;color:var(--muted)">Нет аккаунта? <a href="{% url 'register_view' %}" style="color:var(--accent);font-weight:600">Зарегистрируйтесь</a></p>
+</div>
+{% endblock %}

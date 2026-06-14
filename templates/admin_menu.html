@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Управление меню — DeliveryFlow{% endblock %}
+{% block content %}
+<h1 class="page-title">Управление меню</h1>
+<p class="page-subtitle">Добавляйте, редактируйте и удаляйте товары</p>
+<div class="admin-layout">
+    <div class="admin-form">
+        <h2>{% if edit_product %}Редактировать{% else %}Добавить товар{% endif %}</h2>
+        <form method="post" enctype="multipart/form-data" action="{% if edit_product %}{% url 'admin_menu_edit' edit_product.id %}{% else %}{% url 'admin_menu_add' %}{% endif %}">
+            {% csrf_token %}
+            <div class="form-group"><label>Название</label><input type="text" name="name" value="{{ edit_product.name|default:'' }}" required></div>
+            <div class="form-group"><label>Описание</label><input type="text" name="description" value="{{ edit_product.description|default:'' }}" placeholder="Состав, ингредиенты…"></div>
+            <div class="form-group">
+                <label>Категория</label>
+                <select name="category">
+                    {% for code, label in category_choices %}
+                    <option value="{{ code }}" {% if edit_product.category == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group"><label>Цена (₽)</label><input type="number" name="price" step="0.01" min="0" value="{{ edit_product.price|default:'' }}" required></div>
+            <div class="form-group"><label>Вес / объём</label><input type="text" name="weight" value="{{ edit_product.weight|default:'' }}" placeholder="350 г, 400 мл…"></div>
+            <div class="form-group"><label>Остаток</label><input type="number" name="stock" min="0" value="{{ edit_product.stock|default:'0' }}" required></div>
+            <div class="form-group"><label>Изображение</label><input type="file" name="image" accept="image/*">{% if edit_product and edit_product.image %}<img src="{{ edit_product.image.url }}" class="admin-table-thumb" style="margin-top:.5rem;width:100%;max-width:200px;height:120px">{% endif %}</div>
+            <div class="admin-form-actions">
+                <button class="btn btn-primary" type="submit">{% if edit_product %}Сохранить{% else %}Добавить{% endif %}</button>
+                {% if edit_product %}<a href="{% url 'admin_menu' %}" class="btn btn-outline">Отмена</a>{% endif %}
+            </div>
+        </form>
+    </div>
+    <div class="table-wrap">
+        {% if products %}
+        <table>
+            <thead><tr><th>Товар</th><th>Категория</th><th>Цена</th><th>Остаток</th><th></th></tr></thead>
+            <tbody>
+            {% for p in products %}
+            <tr>
+                <td style="display:flex;align-items:center;gap:.75rem">
+                    {% if p.image %}<img src="{{ p.image.url }}" class="admin-table-thumb">{% else %}<div class="admin-table-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">🍽️</div>{% endif %}
+                    <div><strong>{{ p.name }}</strong>{% if p.weight %}<br><span style="font-size:.8rem;color:var(--muted)">{{ p.weight }}</span>{% endif %}</div>
+                </td>
+                <td style="font-size:.85rem">{{ p.get_category_display }}</td>
+                <td>{{ p.price }} ₽</td>
+                <td>{{ p.stock }} шт.</td>
+                <td>
+                    <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end">
+                        <a href="{% url 'admin_menu' %}?edit={{ p.id }}" class="btn btn-outline btn-sm">Изменить</a>
+                        <form method="post" action="{% url 'admin_menu_delete' p.id %}" onsubmit="return confirm('Удалить «{{ p.name }}»?')">{% csrf_token %}<button class="btn btn-danger-outline btn-sm" type="submit">Удалить</button></form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state"><p>Товаров нет</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

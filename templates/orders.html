@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{% if can_see_all %}Все заказы{% else %}Мои заказы{% endif %} — DeliveryFlow{% endblock %}
+{% block content %}
+<h1 class="page-title">{% if can_see_all %}Все заказы{% else %}Мои заказы{% endif %}</h1>
+<p class="page-subtitle">{% if can_see_all %}Все заказы системы{% else %}История ваших заказов{% endif %}</p>
+{% if orders %}
+<div class="table-wrap" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+    <table>
+        <thead>
+            <tr>
+                <th>Заказ</th>
+                {% if can_see_all %}<th>Пользователь</th>{% endif %}
+                <th>Статус</th>
+                <th>Товаров</th>
+                <th>Сумма</th>
+                <th>Дата</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for order in orders %}
+        <tr>
+            <td style="font-weight:700">#{{ order.id }}</td>
+            {% if can_see_all %}<td>{{ order.user.username }}</td>{% endif %}
+            <td><span class="status-pill status-{{ order.status }}">{{ order.get_status_display }}</span></td>
+            <td>{{ order.items.count }} шт.</td>
+            <td style="font-weight:700">{{ order.total_price }} ₽</td>
+            <td class="text-muted" style="font-size:.85rem">{{ order.created_at|date:"d.m.Y H:i" }}</td>
+            <td><a href="{% url 'order_detail' order.id %}" class="btn btn-outline btn-sm">Подробнее</a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state"><p style="font-size:2rem">📦</p><p>Заказов пока нет</p><a href="{% url 'menu' %}" class="btn btn-primary mt-1">Перейти к меню</a></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% block title %}Аналитика — DeliveryFlow{% endblock %}
+{% block extra_css %}
+<style>
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin-bottom:2rem}
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:.2rem}
+.dash-card .label{font-size:.8rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.dash-card .value{font-size:1.65rem;font-weight:800;color:var(--text)}
+.dash-card .value.accent{color:var(--accent)}
+.dash-card .sub{font-size:.8rem;color:var(--muted)}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem}
+.chart-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
+.chart-panel h3{margin:0 0 1rem;font-size:1rem;font-weight:700}
+.chart-panel canvas{width:100%!important;max-height:280px}
+.chart-full{grid-column:1/-1}
+.event-type{display:inline-block;padding:.2rem .6rem;border-radius:999px;font-size:.75rem;font-weight:600}
+.et-order{background:#d1fae5;color:#047857}.et-menu{background:#fef3c7;color:#b45309}
+.et-role{background:#e0e7ff;color:#3730a3}.et-chat{background:#fce7f3;color:#9d174d}
+@media(max-width:768px){.chart-grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:.5rem">
+    <h1 class="page-title" style="margin-bottom:0">Дашборд аналитики</h1>
+    {% if data %}<span class="text-muted" style="font-size:.85rem">Обновлено: {{ data.updated_at|truncatechars:19 }} · Кэш Redis</span>{% endif %}
+</div>
+<p class="page-subtitle">Данные кэшируются в Redis и обновляются асинхронно через Celery/RabbitMQ</p>
+
+{% if data %}
+
+{# ── Карточки метрик ── #}
+<div class="dash-grid">
+    <div class="dash-card">
+        <span class="label">Заказов всего</span>
+        <span class="value">{{ data.total_orders }}</span>
+    </div>
+    <div class="dash-card">
+        <span class="label">Заказов сегодня</span>
+        <span class="value accent">{{ data.orders_today }}</span>
+    </div>
+    <div class="dash-card">
+        <span class="label">Выручка всего</span>
+        <span class="value">{{ data.revenue_total|floatformat:0 }} ₽</span>
+    </div>
+    <div class="dash-card">
+        <span class="label">Выручка сегодня</span>
+        <span class="value accent">{{ data.revenue_today|floatformat:0 }} ₽</span>
+    </div>
+    <div class="dash-card">
+        <span class="label">Средний чек</span>
+        <span class="value">{{ data.avg_order|floatformat:0 }} ₽</span>
+    </div>
+    <div class="dash-card">
+        <span class="label">Товаров</span>
+        <span class="value">{{ data.products_count }}</span>
+        {% if data.low_stock_count %}<span class="sub" style="color:var(--accent)">⚠ {{ data.low_stock_count }} — мало на складе</span>{% endif %}
+    </div>
+    <div class="dash-card">
+        <span class="label">Активных чатов</span>
+        <span class="value">{{ data.chat_stats.active_rooms }}</span>
+        <span class="sub">Сообщений сегодня: {{ data.chat_stats.messages_today }}</span>
+    </div>
+    <div class="dash-card">
+        <span class="label">Изменений меню</span>
+        <span class="value">{{ data.menu_changes }}</span>
+    </div>
+</div>
+
+{# ── Графики ── #}
+<div class="chart-grid">
+
+    {# Заказы по дням #}
+    <div class="chart-panel">
+        <h3>📈 Заказы за 14 дней</h3>
+        <canvas id="ordersChart"></canvas>
+    </div>
+
+    {# Выручка по дням #}
+    <div class="chart-panel">
+        <h3>💰 Выручка за 14 дней (₽)</h3>
+        <canvas id="revenueChart"></canvas>
+    </div>
+
+    {# Статусы заказов #}
+    <div class="chart-panel">
+        <h3>📊 Заказы по статусам</h3>
+        <canvas id="statusChart"></canvas>
+    </div>
+
+    {# Топ товаров #}
+    <div class="chart-panel">
+        <h3>🏆 Топ-5 товаров (продажи)</h3>
+        <canvas id="topChart"></canvas>
+    </div>
+
+    {# Распределение по часам #}
+    <div class="chart-panel">
+        <h3>🕐 Распределение заказов по часам</h3>
+        <canvas id="hourlyChart"></canvas>
+    </div>
+
+    {# Выручка по категориям #}
+    <div class="chart-panel">
+        <h3>🍽️ Выручка по категориям (₽)</h3>
+        <canvas id="categoryChart"></canvas>
+    </div>
+
+</div>
+
+{# ── Последние события ── #}
+{% if data.recent_events %}
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:2rem">
+    <h3 style="margin:0 0 1rem;font-size:1rem;font-weight:700">🔔 Последние события (real-time через Celery)</h3>
+    <table>
+        <thead><tr><th>Тип</th><th>Пользователь</th><th>Детали</th><th>Время</th></tr></thead>
+        <tbody>
+        {% for e in data.recent_events %}
+        <tr>
+            <td>
+                <span class="event-type {% if e.event_type == 'order_completed' %}et-order{% elif e.event_type == 'menu_changed' %}et-menu{% elif e.event_type == 'role_changed' %}et-role{% elif e.event_type == 'chat_message' %}et-chat{% endif %}">
+                    {{ e.event_type }}
+                </span>
+            </td>
+            <td>{{ e.user__username|default:"—" }}</td>
+            <td style="font-size:.8rem;color:var(--muted);font-family:monospace;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.payload }}</td>
+            <td class="text-muted" style="font-size:.85rem;white-space:nowrap">{{ e.created_at|truncatechars:19 }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{# ── Системные логи (только для админа) ── #}
+{% if logs %}
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem">
+    <h3 style="margin:0 0 1rem;font-size:1rem;font-weight:700">🗂️ Системные логи (50 последних)</h3>
+    <div style="overflow-x:auto">
+    <table>
+        <thead><tr><th>ID</th><th>Тип</th><th>Пользователь</th><th>Данные</th><th>Дата</th></tr></thead>
+        <tbody>
+        {% for log in logs %}
+        <tr>
+            <td style="font-weight:700;color:var(--muted)">#{{ log.id }}</td>
+            <td>
+                <span class="event-type {% if log.event_type == 'order_completed' %}et-order{% elif log.event_type == 'menu_changed' %}et-menu{% elif log.event_type == 'role_changed' %}et-role{% elif log.event_type == 'chat_message' %}et-chat{% endif %}">
+                    {{ log.event_type }}
+                </span>
+            </td>
+            <td>{{ log.user__username|default:"—" }}</td>
+            <td style="font-size:.75rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-family:monospace">{{ log.payload }}</td>
+            <td class="text-muted" style="font-size:.8rem;white-space:nowrap">{{ log.created_at|date:"d.m.Y H:i:s" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state"><p style="font-size:2rem">📊</p><p>Нет данных для аналитики. Оформите первый заказ!</p></div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+    var accent = '#e54b4b';
+    var accentLight = 'rgba(229,75,75,.15)';
+    var colors = ['#e54b4b','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4'];
+
+    Chart.defaults.font.family = "'Manrope',system-ui,sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.plugins.legend.display = false;
+    Chart.defaults.responsive = true;
+    Chart.defaults.maintainAspectRatio = false;
+
+    // ── Заказы по дням ──
+    new Chart(document.getElementById('ordersChart'), {
+        type: 'line',
+        data: {
+            labels: {{ data.date_labels|safe }},
+            datasets: [{
+                label: 'Заказы',
+                data: {{ data.orders_by_day|safe }},
+                borderColor: accent,
+                backgroundColor: accentLight,
+                fill: true,
+                tension: .3,
+                borderWidth: 2.5,
+                pointRadius: 3,
+                pointBackgroundColor: accent
+            }]
+        },
+        options: {
+            plugins: {legend:{display:false}},
+            scales: {y:{beginAtZero:true,ticks:{stepSize:1}}}
+        }
+    });
+
+    // ── Выручка по дням ──
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ data.date_labels|safe }},
+            datasets: [{
+                label: 'Выручка',
+                data: {{ data.revenue_by_day|safe }},
+                backgroundColor: accent,
+                borderRadius: 6,
+                borderSkipped: false,
+                maxBarThickness: 32
+            }]
+        },
+        options: {
+            plugins: {legend:{display:false}},
+            scales: {y:{beginAtZero:true}}
+        }
+    });
+
+    // ── Заказы по статусам ──
+    var statusData = {{ data.orders_by_status|safe }};
+    var statusLabels = Object.keys(statusData);
+    var statusValues = Object.values(statusData);
+    var statusColors = statusLabels.map(function(s){
+        return s==='done'?'#10b981':s==='processing'?'#f59e0b':s==='created'?'#3b82f6':'#ef4444';
+    });
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: statusLabels,
+            datasets: [{data:statusValues,backgroundColor:statusColors,borderWidth:2,borderColor:'#fff'}]
+        },
+        options: {
+            plugins: {legend:{display:true,position:'bottom',labels:{padding:12,usePointStyle:true,pointStyle:'circle'}}},
+            cutout: '60%'
+        }
+    });
+
+    // ── Топ-5 товаров ──
+    var topData = {{ data.top_products|safe }};
+    new Chart(document.getElementById('topChart'), {
+        type: 'bar',
+        data: {
+            labels: topData.map(function(p){return p.product__name}),
+            datasets: [{
+                label: 'Продано',
+                data: topData.map(function(p){return p.sold}),
+                backgroundColor: colors,
+                borderRadius: 6,
+                borderSkipped: false,
+                maxBarThickness: 28
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: {legend:{display:false}},
+            scales: {x:{beginAtZero:true,ticks:{stepSize:1}}}
+        }
+    });
+
+    // ── Распределение по часам ──
+    var hourlyData = {{ data.orders_by_hour|safe }};
+    var hourLabels = Array.from({length:24},function(_,i){return i+':00'});
+    new Chart(document.getElementById('hourlyChart'), {
+        type: 'bar',
+        data: {
+            labels: hourLabels,
+            datasets: [{
+                label: 'Заказы',
+                data: hourlyData,
+                backgroundColor: hourlyData.map(function(v,i){return v===Math.max.apply(null,hourlyData)?accent:'rgba(229,75,75,.4)'}),
+                borderRadius: 4,
+                borderSkipped: false,
+                maxBarThickness: 20
+            }]
+        },
+        options: {
+            plugins: {legend:{display:false}},
+            scales: {y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{maxRotation:45,font:{size:10}}}}
+        }
+    });
+
+    // ── Выручка по категориям ──
+    var catData = {{ data.category_revenue|safe }};
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: {
+            labels: catData.map(function(c){return c.category}),
+            datasets: [{
+                data: catData.map(function(c){return c.total}),
+                backgroundColor: colors.slice(0, catData.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {display:true,position:'bottom',labels:{padding:10,usePointStyle:true,pointStyle:'circle',font:{size:11}}}
+            },
+            cutout: '55%'
+        }
+    });
+
+})();
+</script>
+{% endif %}
+{% endblock %}

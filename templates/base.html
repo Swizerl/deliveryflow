@@ -1,0 +1,484 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DeliveryFlow{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+/* ── Variables ── */
+:root {
+    --accent: #e54b4b;
+    --accent-hover: #c93d3d;
+    --header: #000;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --bg: #fff;
+    --surface: #f7f7f8;
+    --border: #e5e7eb;
+    --radius: 12px;
+    --shadow: 0 8px 30px rgba(0,0,0,.08);
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+    margin: 0; font-family: 'Manrope', system-ui, sans-serif;
+    color: var(--text); background: var(--bg); line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh; display: flex; flex-direction: column;
+}
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+button, input, select, textarea { font: inherit; }
+
+/* ── Container ── */
+.container { width: min(1120px, 92vw); margin: 0 auto; }
+
+/* ── Buttons ── */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    padding: .75rem 1.5rem; border: none; border-radius: var(--radius);
+    font-weight: 600; cursor: pointer; font-size: .95rem;
+    transition: transform .15s, background .15s, box-shadow .15s, border-color .15s;
+}
+.btn:active { transform: scale(.98); }
+.btn:hover { text-decoration: none; }
+
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 14px rgba(229,75,75,.3); }
+
+.btn-outline { background: transparent; color: var(--text); border: 2px solid var(--border); }
+.btn-outline:hover { border-color: var(--text); }
+
+.btn-ghost { background: transparent; color: #fff; }
+.btn-ghost:hover { background: rgba(255,255,255,.1); }
+
+.btn-success { background: #047857; color: #fff; }
+.btn-success:hover { background: #065f46; box-shadow: 0 4px 14px rgba(4,120,87,.3); }
+
+.btn-danger { background: #b91c1c; color: #fff; }
+.btn-danger:hover { background: #991b1b; }
+
+.btn-danger-outline { background: transparent; color: var(--muted); border: 2px solid var(--border); }
+.btn-danger-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+.btn-warning { background: #d97706; color: #fff; }
+.btn-warning:hover { background: #b45309; }
+
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: #aaa; background: #fff; }
+
+.btn-sm { padding: .4rem .75rem; font-size: .85rem; border-radius: 8px; }
+.btn-lg { padding: .9rem 2rem; font-size: 1rem; }
+.btn-block { width: 100%; }
+.btn-icon { width: 36px; height: 36px; padding: 0; font-size: 1.1rem; }
+.btn-icon.btn-sm { width: 32px; height: 32px; }
+.btn:disabled, .btn[disabled] { opacity: .5; cursor: not-allowed; transform: none; }
+
+/* ── Badge ── */
+.badge {
+    display: inline-flex; min-width: 1.25rem; height: 1.25rem;
+    padding: 0 .35rem; align-items: center; justify-content: center;
+    border-radius: 999px; background: var(--accent); color: #fff;
+    font-size: .7rem; font-weight: 700;
+}
+
+/* ── Header ── */
+.site-header { background: var(--header); color: #fff; position: sticky; top: 0; z-index: 100; }
+.header-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; min-height: 72px;
+}
+.logo { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; color: #fff; }
+.logo span { color: var(--accent); }
+.logo:hover { opacity: .9; }
+.nav { display: flex; align-items: center; gap: 1.5rem; font-weight: 500; }
+.nav a { opacity: .85; transition: opacity .15s; }
+.nav a:hover { opacity: 1; }
+.nav-cart { display: inline-flex; align-items: center; gap: .35rem; }
+.header-actions { display: flex; align-items: center; gap: .5rem; }
+
+/* ── Notification Bell ── */
+.bell-wrap{position:relative}
+.bell-btn{background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;padding:.35rem;position:relative;opacity:.85;transition:opacity .15s}
+.bell-btn:hover{opacity:1}
+.bell-badge{position:absolute;top:0;right:-2px;background:var(--accent);color:#fff;font-size:.65rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;line-height:1}
+.bell-dropdown{position:absolute;right:0;top:calc(100% + 8px);width:340px;max-height:420px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 12px 40px rgba(0,0,0,.15);display:none;z-index:200;overflow:hidden;flex-direction:column}
+.bell-dropdown.open{display:flex}
+.bell-header{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--surface)}
+.bell-header h4{margin:0;font-size:.9rem;color:var(--text)}
+.bell-list{overflow-y:auto;flex:1;max-height:340px}
+.bell-item{display:flex;gap:.65rem;padding:.7rem 1rem;border-bottom:1px solid #f5f5f5;cursor:pointer;transition:background .1s;text-decoration:none;color:inherit}
+.bell-item:hover{background:#fafafa;text-decoration:none}
+.bell-item.unread{background:#fff5f5}
+.bell-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.bell-icon.order{background:#d1fae5;color:#047857}.bell-icon.chat{background:#fce7f3;color:#9d174d}.bell-icon.system{background:#e0e7ff;color:#3730a3}
+.bell-info{flex:1;min-width:0}
+.bell-title{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bell-time{font-size:.75rem;color:var(--muted)}
+.bell-empty{padding:2rem;text-align:center;color:var(--muted);font-size:.9rem}
+.bell-footer{padding:.6rem 1rem;border-top:1px solid var(--border);text-align:center;background:var(--surface)}
+.bell-footer a{font-size:.85rem;font-weight:600;color:var(--accent)}
+
+/* ── Footer ── */
+.site-footer {
+    background: var(--header); color: rgba(255,255,255,.75);
+    padding: 2rem 0; margin-top: auto;
+}
+.footer-inner {
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1.5rem;
+}
+.footer-inner strong { color: #fff; font-size: 1.1rem; }
+.footer-inner p { margin: .35rem 0 0; font-size: .9rem; }
+.footer-meta { text-align: right; }
+
+/* ── Page ── */
+.page { padding: 2.5rem 0 4rem; min-height: calc(100vh - 72px - 120px); flex: 1; }
+.page-title { margin: 0 0 .5rem; font-size: clamp(1.75rem, 4vw, 2.25rem); font-weight: 800; }
+.page-subtitle { margin: 0 0 2rem; color: var(--muted); }
+
+/* ── Forms ── */
+.form-card {
+    max-width: 420px; margin: 0 auto; padding: 2rem;
+    background: var(--surface); border-radius: calc(var(--radius) + 4px);
+    box-shadow: var(--shadow);
+}
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; margin-bottom: .35rem; font-weight: 600; font-size: .9rem; }
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: .7rem .85rem; border: 1px solid var(--border);
+    border-radius: var(--radius); background: #fff; font-size: .95rem;
+}
+.form-group input:focus, .form-group select:focus {
+    outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent;
+}
+.form-group input[type="file"] { padding: .55rem .75rem; cursor: pointer; }
+
+/* ── Alerts ── */
+.messages { list-style: none; margin: 0 0 1rem; padding: 0; }
+.messages li { padding: .85rem 1rem; border-radius: var(--radius); margin-bottom: .5rem; font-weight: 500; }
+.messages .success, .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.messages .error, .alert-error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.messages .info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.messages .warning { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+
+/* ── Status pills ── */
+.status-pill {
+    display: inline-block; padding: .35rem .85rem; border-radius: 999px;
+    font-size: .85rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
+}
+.status-created { background: #e0e7ff; color: #3730a3; }
+.status-processing { background: #fef3c7; color: #b45309; }
+.status-done { background: #d1fae5; color: #047857; }
+.status-failed { background: #fee2e2; color: #b91c1c; }
+
+/* ── Product cards ── */
+.grid-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
+.product-card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 2px); overflow: hidden;
+    display: flex; flex-direction: column; transition: box-shadow .2s, transform .2s;
+}
+.product-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.product-card__image-wrap {
+    position: relative; aspect-ratio: 3/2; overflow: hidden; background: var(--surface);
+}
+.product-card__image-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.product-card__placeholder {
+    width: 100%; aspect-ratio: 3/2; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--border);
+}
+.product-card__badge {
+    position: absolute; top: .75rem; left: .75rem;
+    background: rgba(0,0,0,.75); color: #fff; font-size: .75rem;
+    padding: .25rem .6rem; border-radius: 999px; font-weight: 600;
+}
+.product-card__body { padding: 1rem 1.1rem 1.25rem; display: flex; flex-direction: column; flex: 1; }
+.product-card__body h3 { margin: 0 0 .35rem; font-size: 1.05rem; }
+.product-card__price { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--accent); }
+.product-card__stock { margin: .25rem 0 1rem; font-size: .85rem; color: var(--muted); }
+.product-card__actions { margin-top: auto; }
+.product-card__actions .btn { width: 100%; }
+
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th, td { padding: .65rem .75rem; text-align: left; border-bottom: 1px solid var(--border); }
+th { font-weight: 700; background: var(--surface); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+tr:hover td { background: #fafafa; }
+
+/* ── Cart ── */
+.cart-layout { display: grid; grid-template-columns: 1fr minmax(260px,320px); gap: 2rem; align-items: start; }
+.cart-item {
+    display: grid; grid-template-columns: 80px 1fr auto auto;
+    gap: 1rem; align-items: center; padding: 1rem;
+    background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border);
+    margin-bottom: .75rem;
+}
+.cart-item__thumb { width: 80px; height: 56px; object-fit: cover; border-radius: 8px; background: var(--border); }
+.cart-item__info h3 { margin: 0 0 .25rem; font-size: 1rem; }
+.cart-item__info p { margin: 0; color: var(--muted); font-size: .9rem; }
+.cart-item__qty { display: flex; align-items: center; gap: .5rem; }
+.qty-btn {
+    width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 8px;
+    background: #fff; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s;
+}
+.qty-btn:hover { border-color: var(--text); }
+.qty-btn:disabled { opacity: .4; cursor: not-allowed; }
+.qty-val { font-weight: 700; min-width: 1.5rem; text-align: center; }
+.cart-item__remove { border: none; background: transparent; font-size: 1.5rem; color: var(--muted); cursor: pointer; line-height: 1; }
+.cart-item__remove:hover { color: var(--accent); }
+.cart-summary {
+    padding: 1.5rem; background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); position: sticky; top: 88px;
+}
+.cart-summary h2 { margin: 0 0 .5rem; font-size: 1rem; }
+.cart-summary__total { font-size: 2rem; font-weight: 800; margin: 0 0 1.25rem; color: var(--accent); }
+
+/* ── Order detail ── */
+.back-link { display: inline-block; margin-bottom: 1rem; color: var(--muted); font-weight: 500; transition: color .15s; }
+.back-link:hover { color: var(--accent); }
+.order-track {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.5rem; margin-bottom: 2rem;
+}
+.order-track__status { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.ws-indicator { font-size: .85rem; font-weight: 600; }
+.ws-on { color: #047857; }
+.ws-off { color: var(--muted); }
+.timeline { list-style: none; margin: 0; padding: 0; display: flex; gap: .5rem; }
+.timeline li {
+    flex: 1; text-align: center; padding: .75rem .5rem; border-radius: var(--radius);
+    background: #fff; border: 2px solid var(--border); font-size: .85rem; font-weight: 600; color: var(--muted);
+    transition: all .3s;
+}
+.timeline li.active { border-color: var(--accent); color: var(--accent); background: #fff5f5; }
+.timeline li.done { border-color: #047857; color: #047857; background: #ecfdf5; }
+.timeline li.failed { border-color: #b91c1c; color: #b91c1c; background: #fef2f2; }
+.order-total { text-align: right; font-size: 1.35rem; font-weight: 800; margin-top: 1rem; }
+
+/* ── Stat cards ── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem 1.1rem;
+    display: flex; flex-direction: column; gap: .35rem;
+}
+.stat-label { font-size: .85rem; color: var(--muted); }
+.stat-value { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+.stats-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem;
+}
+.stats-panel h2 { margin: 0 0 1rem; font-size: 1.05rem; }
+.stats-list { list-style: none; margin: 0; padding: 0; }
+.stats-list li { display: flex; justify-content: space-between; padding: .5rem 0; border-bottom: 1px solid var(--border); }
+.stats-list li:last-child { border-bottom: none; }
+
+/* ── Admin ── */
+.admin-layout { display: grid; grid-template-columns: minmax(280px,360px) 1fr; gap: 2rem; align-items: start; }
+.admin-form { padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.admin-form h2 { margin: 0 0 1rem; font-size: 1.1rem; }
+.admin-form-actions { display: flex; gap: .75rem; flex-wrap: wrap; }
+.admin-table-thumb { width: 72px; height: 48px; object-fit: cover; border-radius: 8px; background: var(--border); }
+
+/* ── Hero ── */
+.hero {
+    background: linear-gradient(135deg, #fff 0%, #fef2f2 50%, #fff 100%);
+    padding: 5rem 0 4.5rem; text-align: center; border-bottom: 1px solid var(--border);
+}
+.hero-kicker { margin: 0 0 .5rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .12em; font-size: .8rem; }
+.hero h1 { margin: 0 0 1rem; font-size: clamp(2rem,6vw,3.25rem); font-weight: 800; line-height: 1.1; }
+.hero-text { margin: 0 auto 2rem; max-width: 520px; color: var(--muted); font-size: 1.1rem; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 1.5rem; padding: 3.5rem 0; }
+.feature-card { padding: 1.5rem; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); }
+.feature-icon { font-size: 1.75rem; display: block; margin-bottom: .75rem; }
+.feature-card h3 { margin: 0 0 .5rem; }
+.feature-card p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+/* ── Empty state ── */
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+.empty-state p { margin: .5rem 0; }
+
+/* ── Helpers ── */
+.text-muted { color: var(--muted); }
+.mt-1 { margin-top: 1rem; } .mt-2 { margin-top: 2rem; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .cart-layout { grid-template-columns: 1fr; }
+    .admin-layout { grid-template-columns: 1fr; }
+    .timeline { flex-direction: column; }
+    .cart-item { grid-template-columns: 64px 1fr; }
+    .footer-meta { text-align: left; }
+}
+@media (max-width: 640px) {
+    .nav { gap: .75rem; font-size: .9rem; }
+}
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="{% url 'home' %}" class="logo">Delivery<span>Flow</span></a>
+            <nav class="nav">
+                <a href="{% url 'menu' %}">Меню</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'cart' %}" class="nav-cart">Корзина{% if cart_count %} <span class="badge">{{ cart_count }}</span>{% endif %}</a>
+                    <a href="{% url 'orders_list' %}">Заказы</a>
+                    {% if is_staff %}
+                        <a href="{% url 'chat_list' %}">Чаты</a>
+                    {% else %}
+                        <a href="{% url 'chat_start' %}">Поддержка</a>
+                    {% endif %}
+                    {% if is_admin %}
+                        <a href="{% url 'admin_menu' %}">Управление</a>
+                    {% endif %}
+                    {% if is_staff %}
+                        <a href="{% url 'admin_analytics' %}">Аналитика</a>
+                    {% endif %}
+                {% endif %}
+            </nav>
+            <div class="header-actions">
+                {% if user.is_authenticated %}
+                    <div class="bell-wrap">
+                        <button class="bell-btn" id="bell-btn" type="button" title="Уведомления">
+                            🔔{% if notif_count %}<span class="bell-badge" id="bell-badge">{{ notif_count }}</span>{% else %}<span class="bell-badge" id="bell-badge" style="display:none">0</span>{% endif %}
+                        </button>
+                        <div class="bell-dropdown" id="bell-dropdown">
+                            <div class="bell-header">
+                                <h4>Уведомления</h4>
+                                <form method="post" action="{% url 'notifications_mark_read' %}" style="margin:0">{% csrf_token %}<button class="btn btn-sm" style="background:none;color:var(--accent);padding:2px 6px;font-size:.8rem" type="submit">Прочитать все</button></form>
+                            </div>
+                            <div class="bell-list" id="bell-list"><div class="bell-empty">Загрузка…</div></div>
+                            <div class="bell-footer"><a href="{% url 'notifications_page' %}">Все уведомления</a></div>
+                        </div>
+                    </div>
+                    <a href="{% url 'logout_view' %}" class="btn btn-ghost btn-sm">Выход ({{ user.username }})</a>
+                {% else %}
+                    <a href="{% url 'login_view' %}" class="btn btn-ghost btn-sm">Вход</a>
+                    <a href="{% url 'register_view' %}" class="btn btn-primary btn-sm">Регистрация</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main class="page">
+        <div class="container">
+            {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div>
+                <strong>Delivery<span style="color:var(--accent)">Flow</span></strong>
+                <p>Информационная система обработки заказов</p>
+            </div>
+            <div class="footer-meta">
+                <p>Django · DRF · Celery · RabbitMQ · Redis · Channels</p>
+                <p>© 2026 — Дипломный проект</p>
+            </div>
+        </div>
+    </footer>
+    {% if user.is_authenticated %}
+    <script>
+    (function(){
+        var bellBtn = document.getElementById('bell-btn');
+        var dropdown = document.getElementById('bell-dropdown');
+        var bellList = document.getElementById('bell-list');
+        var bellBadge = document.getElementById('bell-badge');
+        var loaded = false;
+
+        /* Toggle dropdown */
+        bellBtn.addEventListener('click', function(e){
+            e.stopPropagation();
+            var isOpen = dropdown.classList.toggle('open');
+            if(isOpen && !loaded) loadNotifications();
+        });
+        document.addEventListener('click', function(e){
+            if(!dropdown.contains(e.target) && e.target !== bellBtn)
+                dropdown.classList.remove('open');
+        });
+
+        /* Load notifications via fetch */
+        function loadNotifications(){
+            fetch('{% url "notifications_api" %}')
+            .then(function(r){return r.json()})
+            .then(function(data){
+                loaded = true;
+                updateBadge(data.unread);
+                if(!data.notifications.length){
+                    bellList.innerHTML = '<div class="bell-empty">Нет уведомлений</div>';
+                    return;
+                }
+                var html = '';
+                data.notifications.forEach(function(n){
+                    var iconCls = n.type==='order_status'?'order':n.type==='chat_message'?'chat':'system';
+                    var icon = n.type==='order_status'?'📦':n.type==='chat_message'?'💬':'🔔';
+                    html += '<a class="bell-item'+(n.is_read?'':' unread')+'" href="'+(n.link||'#')+'">'
+                        +'<div class="bell-icon '+iconCls+'">'+icon+'</div>'
+                        +'<div class="bell-info"><div class="bell-title">'+esc(n.title)+'</div>'
+                        +'<div class="bell-time">'+n.created_at+'</div></div></a>';
+                });
+                bellList.innerHTML = html;
+            })
+            .catch(function(){bellList.innerHTML='<div class="bell-empty">Ошибка загрузки</div>'});
+        }
+
+        function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML}
+
+        function updateBadge(count){
+            bellBadge.textContent = count;
+            bellBadge.style.display = count > 0 ? 'flex' : 'none';
+        }
+
+        /* WebSocket for real-time notifications via Redis Channel Layer */
+        var proto = location.protocol==='https:'?'wss:':'ws:';
+        var ws = new WebSocket(proto+'//'+location.host+'/ws/notifications/');
+        ws.onmessage = function(e){
+            try{
+                var data = JSON.parse(e.data);
+                if(data.type === 'notification'){
+                    /* Update badge count */
+                    var cur = parseInt(bellBadge.textContent)||0;
+                    updateBadge(cur + 1);
+                    /* Prepend to list if loaded */
+                    if(loaded){
+                        var iconCls = data.notification_type==='order_status'?'order':data.notification_type==='chat_message'?'chat':'system';
+                        var icon = data.notification_type==='order_status'?'📦':data.notification_type==='chat_message'?'💬':'🔔';
+                        var item = document.createElement('a');
+                        item.className = 'bell-item unread';
+                        item.href = data.link||'#';
+                        item.innerHTML = '<div class="bell-icon '+iconCls+'">'+icon+'</div>'
+                            +'<div class="bell-info"><div class="bell-title">'+esc(data.title)+'</div>'
+                            +'<div class="bell-time">'+data.created_at+'</div></div>';
+                        var empty = bellList.querySelector('.bell-empty');
+                        if(empty) empty.remove();
+                        bellList.prepend(item);
+                    }
+                    /* Pulse bell */
+                    bellBtn.style.transform = 'scale(1.3)';
+                    setTimeout(function(){bellBtn.style.transform = ''}, 300);
+                }
+            }catch(err){}
+        };
+    })();
+    </script>
+    {% endif %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

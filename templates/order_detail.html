@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Заказ #{{ order.id }} — DeliveryFlow{% endblock %}
+{% block content %}
+<a href="{% url 'orders_list' %}" class="back-link">← Назад к заказам</a>
+<h1 class="page-title">Заказ #{{ order.id }}</h1>
+
+<div class="order-track">
+    <div class="order-track__status">
+        <span class="status-pill status-{{ order.status }}" id="order-status-pill">{{ order.get_status_display }}</span>
+        <span class="ws-indicator ws-off" id="ws-text">Подключение…</span>
+    </div>
+    <ul class="timeline" id="timeline">
+        <li id="tl-created" class="{% if order.status == 'created' %}active{% elif order.status != 'created' %}done{% endif %}">Created</li>
+        <li id="tl-processing" class="{% if order.status == 'processing' %}active{% elif order.status == 'done' %}done{% endif %}">Processing</li>
+        <li id="tl-done" class="{% if order.status == 'done' %}done{% elif order.status == 'failed' %}failed{% endif %}">Done</li>
+    </ul>
+</div>
+
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem">
+    <h2 style="margin:0 0 1rem;font-size:1.15rem">Состав заказа</h2>
+    {% for item in order.items.all %}
+    <div style="display:flex;align-items:center;gap:1rem;padding:.85rem 0;border-bottom:1px solid var(--border)">
+        <div style="width:72px;height:48px;border-radius:8px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem">🍽️</div>
+        <div style="flex:1">
+            <strong>{{ item.product.name }}</strong>
+            <p style="margin:.15rem 0 0;color:var(--muted);font-size:.9rem">{{ item.product.price }} ₽ × {{ item.quantity }}</p>
+        </div>
+        <span style="font-weight:700">{{ item.line_total }} ₽</span>
+    </div>
+    {% endfor %}
+    <div class="order-total">Итого: {{ order.total_price }} ₽</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    var orderId = {{ order.id }};
+    var pillEl = document.getElementById('order-status-pill');
+    var wsText = document.getElementById('ws-text');
+    var steps = ['created','processing','done'];
+    var labels = {created:'Created',processing:'Processing',done:'Done',failed:'Failed'};
+
+    function updateTimeline(status) {
+        var idx = steps.indexOf(status);
+        steps.forEach(function(s, i) {
+            var el = document.getElementById('tl-' + s);
+            if (!el) return;
+            el.className = '';
+            if (status === 'failed') { el.className = (s === 'done') ? 'failed' : (i < 2 ? 'done' : ''); }
+            else if (i < idx) el.className = 'done';
+            else if (i === idx) el.className = 'active';
+        });
+    }
+
+    var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    var ws = new WebSocket(proto + '//' + location.host + '/ws/orders/' + orderId + '/');
+
+    ws.onopen = function(){
+        wsText.textContent = '● Подключено';
+        wsText.className = 'ws-indicator ws-on';
+    };
+    ws.onclose = function(){
+        wsText.textContent = '○ Отключено';
+        wsText.className = 'ws-indicator ws-off';
+    };
+    ws.onmessage = function(e){
+        try {
+            var data = JSON.parse(e.data);
+            if (data.status) {
+                pillEl.textContent = labels[data.status] || data.status;
+                pillEl.className = 'status-pill status-' + data.status;
+                updateTimeline(data.status);
+            }
+        } catch(err){}
+    };
+})();
+</script>
+{% endblock %}

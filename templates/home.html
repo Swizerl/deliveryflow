@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}DeliveryFlow — Система обработки заказов{% endblock %}
+{% block extra_css %}<style>.page{padding:0}</style>{% endblock %}
+{% block content %}
+<div class="hero" style="margin:-2.5rem 0 0;width:100vw;margin-left:calc(50% - 50vw);">
+    <div class="container">
+        <p class="hero-kicker">Дипломный проект</p>
+        <h1>Delivery<span style="color:var(--accent)">Flow</span></h1>
+        <p class="hero-text">Система обработки и сопровождения заказов доставки продукции на базе RabbitMQ</p>
+        <div class="hero-actions">
+            <a href="{% url 'menu' %}" class="btn btn-primary btn-lg">Перейти к меню</a>
+            {% if not user.is_authenticated %}
+            <a href="{% url 'register_view' %}" class="btn btn-outline btn-lg" style="border-color:var(--border);color:var(--text)">Регистрация</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div class="features" style="width:min(1120px,92vw);margin:0 auto">
+    <div class="feature-card">
+        <span class="feature-icon">📋</span>
+        <h3>Каталог товаров</h3>
+        <p>Выбирайте товары из каталога и добавляйте в корзину одним нажатием</p>
+    </div>
+    <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h3>Асинхронная обработка</h3>
+        <p>Заказы обрабатываются через очередь RabbitMQ и Celery-воркеры</p>
+    </div>
+    <div class="feature-card">
+        <span class="feature-icon">🔔</span>
+        <h3>Real-time обновления</h3>
+        <p>Статус заказа обновляется в реальном времени через WebSocket</p>
+    </div>
+    <div class="feature-card">
+        <span class="feature-icon">📊</span>
+        <h3>Аналитика</h3>
+        <p>Панель аналитики с данными о заказах, выручке и популярных товарах</p>
+    </div>
+</div>
+{% endblock %}

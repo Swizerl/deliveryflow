@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Корзина — DeliveryFlow{% endblock %}
+{% block content %}
+<h1 class="page-title">Корзина</h1>
+{% if items %}
+<div class="cart-layout">
+    <div>
+        {% for item in items %}
+        <div class="cart-item">
+            <div style="width:80px;height:56px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--border)">🍽️</div>
+            <div class="cart-item__info">
+                <h3>{{ item.product.name }}</h3>
+                <p>{{ item.product.price }} ₽ за шт.</p>
+            </div>
+            <div class="cart-item__qty">
+                <form method="post" action="{% url 'cart_update' item.product.id %}" style="display:flex;gap:.5rem;align-items:center">
+                    {% csrf_token %}
+                    <input type="hidden" name="quantity" value="{{ item.quantity|add:'-1' }}">
+                    <button class="qty-btn" type="submit" {% if item.quantity <= 1 %}disabled{% endif %}>−</button>
+                </form>
+                <span class="qty-val">{{ item.quantity }}</span>
+                <form method="post" action="{% url 'cart_update' item.product.id %}" style="display:flex">
+                    {% csrf_token %}
+                    <input type="hidden" name="quantity" value="{{ item.quantity|add:'1' }}">
+                    <button class="qty-btn" type="submit">+</button>
+                </form>
+            </div>
+            <form method="post" action="{% url 'cart_remove' item.product.id %}">
+                {% csrf_token %}
+                <button class="cart-item__remove" type="submit" title="Удалить">×</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="cart-summary">
+        <h2>Итого</h2>
+        <p class="cart-summary__total">{{ total }} ₽</p>
+        <form method="post" action="{% url 'checkout' %}">
+            {% csrf_token %}
+            <button class="btn btn-primary btn-block" type="submit">Оформить заказ</button>
+        </form>
+        <a href="{% url 'menu' %}" class="btn btn-outline btn-block" style="margin-top:.75rem">Продолжить покупки</a>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <p style="font-size:2rem">🛒</p>
+    <p>Корзина пуста</p>
+    <a href="{% url 'menu' %}" class="btn btn-primary mt-1">Перейти к меню</a>
+</div>
+{% endif %}
+{% endblock %}

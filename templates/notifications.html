@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Уведомления — DeliveryFlow{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:.5rem">
+    <h1 class="page-title" style="margin-bottom:0">Уведомления</h1>
+    {% if notifs %}
+    <form method="post" action="{% url 'notifications_mark_read' %}">
+        {% csrf_token %}
+        <button class="btn btn-outline btn-sm" type="submit">Прочитать все</button>
+    </form>
+    {% endif %}
+</div>
+<p class="page-subtitle">Уведомления доставляются в реальном времени через WebSocket</p>
+{% if notifs %}
+<div style="display:flex;flex-direction:column;gap:.5rem">
+    {% for n in notifs %}
+    <a href="{{ n.link|default:'#' }}" style="display:flex;align-items:flex-start;gap:1rem;padding:1rem 1.25rem;background:{% if n.is_read %}var(--surface){% else %}#fff5f5{% endif %};border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:inherit;transition:box-shadow .15s">
+        <div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;{% if n.notification_type == 'order_status' %}background:#d1fae5;color:#047857{% elif n.notification_type == 'chat_message' %}background:#fce7f3;color:#9d174d{% else %}background:#e0e7ff;color:#3730a3{% endif %}">
+            {% if n.notification_type == 'order_status' %}📦{% elif n.notification_type == 'chat_message' %}💬{% else %}🔔{% endif %}
+        </div>
+        <div style="flex:1;min-width:0">
+            <div style="font-weight:{% if n.is_read %}500{% else %}700{% endif %};font-size:.95rem">{{ n.title }}</div>
+            {% if n.message %}<div style="font-size:.85rem;color:var(--muted);margin-top:.15rem">{{ n.message|truncatechars:120 }}</div>{% endif %}
+            <div style="font-size:.8rem;color:var(--muted);margin-top:.3rem">{{ n.created_at|date:"d.m.Y H:i" }}</div>
+        </div>
+        {% if not n.is_read %}<div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:6px"></div>{% endif %}
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state"><p style="font-size:2rem">🔔</p><p>Нет уведомлений</p></div>
+{% endif %}
+{% endblock %}

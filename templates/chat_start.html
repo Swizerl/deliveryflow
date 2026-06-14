@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Чат с поддержкой — DeliveryFlow{% endblock %}
+{% block content %}
+<h1 class="page-title">Чат с поддержкой</h1>
+<p class="page-subtitle">Если у вас возникла проблема — напишите нам</p>
+{% if active_room %}
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem">
+    <p style="margin:0 0 1rem">У вас есть активный чат:</p>
+    <a href="{% url 'chat_room' active_room.id %}" class="btn btn-primary">Перейти в чат</a>
+</div>
+{% else %}
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem">
+    <p style="margin:0 0 1rem">Опишите вашу проблему, и модератор ответит как можно скорее.</p>
+    <form method="post" action="{% url 'chat_create' %}">
+        {% csrf_token %}
+        <div class="form-group"><label>Сообщение</label><input type="text" name="text" placeholder="Опишите проблему…" required></div>
+        <button class="btn btn-primary" type="submit">Начать чат</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
