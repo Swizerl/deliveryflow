@@ -1,11 +1,64 @@
 {% extends "base.html" %}
 {% block title %}Меню — DeliveryFlow{% endblock %}
+
+{% block extra_css %}
+<style>
+    html { scroll-behavior: smooth; }
+
+    /* ── Навигация по категориям (sticky-чипы) ── */
+    .cat-nav {
+        position: sticky; top: 72px; z-index: 50;
+        background: var(--bg);
+        margin: 0 0 1.75rem;
+        padding: .65rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .cat-nav__track {
+        display: flex; gap: .5rem;
+        overflow-x: auto; -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .cat-nav__track::-webkit-scrollbar { display: none; }
+    .cat-chip {
+        flex: 0 0 auto;
+        display: inline-flex; align-items: center;
+        padding: .45rem .95rem;
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        font-size: .9rem; font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background .15s, color .15s, border-color .15s;
+    }
+    .cat-chip:hover { border-color: var(--text); }
+    .cat-chip.is-active {
+        background: var(--accent); color: #fff; border-color: var(--accent);
+    }
+    /* Чтобы заголовок категории не прятался под хедером и панелью при переходе */
+    .cat-section { scroll-margin-top: 150px; }
+
+    @media (max-width: 640px) {
+        .cat-nav { top: 72px; }
+        .cat-chip { font-size: .85rem; padding: .4rem .8rem; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <h1 class="page-title">Меню</h1>
 <p class="page-subtitle">Выберите блюда и добавьте в корзину</p>
 {% if categories %}
+    <nav class="cat-nav" id="cat-nav" aria-label="Категории меню">
+        <div class="cat-nav__track">
+            {% for cat_code, cat_label, items in categories %}
+            <a class="cat-chip" href="#cat-{{ cat_code }}" data-cat="cat-{{ cat_code }}">{{ cat_label }}</a>
+            {% endfor %}
+        </div>
+    </nav>
     {% for cat_code, cat_label, items in categories %}
-    <div style="margin-bottom:2.5rem">
+    <div class="cat-section" id="cat-{{ cat_code }}" style="margin-bottom:2.5rem">
         <h2 style="margin-bottom:1rem;font-size:1.3rem">{{ cat_label }}</h2>
         <div class="grid-products">
             {% for p in items %}
@@ -43,6 +96,54 @@
         </div>
     </div>
     {% endfor %}
+
+    <script>
+    (function(){
+        var bar = document.getElementById('cat-nav');
+        if(!bar) return;
+        var links = Array.prototype.slice.call(bar.querySelectorAll('a[data-cat]'));
+        if(!links.length) return;
+
+        var byId = {};
+        links.forEach(function(a){ byId[a.getAttribute('data-cat')] = a; });
+        var sections = links
+            .map(function(a){ return document.getElementById(a.getAttribute('data-cat')); })
+            .filter(Boolean);
+
+        function setActive(id){
+            links.forEach(function(a){
+                a.classList.toggle('is-active', a.getAttribute('data-cat') === id);
+            });
+            var active = byId[id];
+            if(active && bar.scrollWidth > bar.clientWidth){
+                active.scrollIntoView({inline:'center', block:'nearest'});
+            }
+        }
+
+        // Подсветка активной категории при скролле — целиком на клиенте.
+        if('IntersectionObserver' in window){
+            var ratios = {};
+            var obs = new IntersectionObserver(function(entries){
+                entries.forEach(function(e){
+                    ratios[e.target.id] = e.isIntersecting ? e.intersectionRatio : 0;
+                });
+                var best = null, bestR = -1;
+                sections.forEach(function(s){
+                    var r = ratios[s.id] || 0;
+                    if(r > bestR){ bestR = r; best = s.id; }
+                });
+                if(best) setActive(best);
+            }, {rootMargin:'-150px 0px -55% 0px', threshold:[0, .25, .5, 1]});
+            sections.forEach(function(s){ obs.observe(s); });
+        }
+
+        links.forEach(function(a){
+            a.addEventListener('click', function(){ setActive(a.getAttribute('data-cat')); });
+        });
+
+        setActive(links[0].getAttribute('data-cat'));
+    })();
+    </script>
 {% else %}
 <div class="empty-state"><p style="font-size:2rem">🍽️</p><p>Меню пока пусто</p></div>
 {% endif %}

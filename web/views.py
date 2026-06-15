@@ -203,10 +203,15 @@ def checkout(request):
 
 @login_required
 def orders_list(request):
+    from django.core.paginator import Paginator
     see_all = user_is_staff(request.user)
-    qs = Order.objects.prefetch_related('items__product')
-    orders = qs.all() if see_all else qs.filter(user=request.user)
-    return render(request, 'orders.html', {'orders': orders, 'can_see_all': see_all})
+    qs = Order.objects.select_related('user').prefetch_related('items__product')
+    if not see_all:
+        qs = qs.filter(user=request.user)
+    page_obj = Paginator(qs, 20).get_page(request.GET.get('page'))
+    return render(request, 'orders.html', {
+        'orders': page_obj, 'page_obj': page_obj, 'can_see_all': see_all,
+    })
 
 
 @login_required
@@ -250,12 +255,14 @@ def chat_list(request):
     if not user_is_staff(request.user):
         return redirect('home')
     from django.core.cache import cache
+    from django.core.paginator import Paginator
     from chat.tasks import UNREAD_COUNT_KEY
-    rooms = ChatRoom.objects.filter(is_active=True).select_related('user', 'moderator')
-    for room in rooms:
+    qs = ChatRoom.objects.filter(is_active=True).select_related('user', 'moderator')
+    page_obj = Paginator(qs, 20).get_page(request.GET.get('page'))
+    for room in page_obj:
         room.last_msg = room.messages.order_by('-created_at').first()
         room.unread = cache.get(UNREAD_COUNT_KEY.format(room_id=room.id, user_id=request.user.id), 0)
-    return render(request, 'chat_list.html', {'rooms': rooms})
+    return render(request, 'chat_list.html', {'rooms': page_obj, 'page_obj': page_obj})
 
 
 @login_required
@@ -304,8 +311,10 @@ def notifications_mark_read(request):
 @login_required
 def notifications_page(request):
     """Полная страница уведомлений."""
-    notifs = Notification.objects.filter(user=request.user)[:50]
-    return render(request, 'notifications.html', {'notifs': notifs})
+    from django.core.paginator import Paginator
+    qs = Notification.objects.filter(user=request.user)
+    page_obj = Paginator(qs, 20).get_page(request.GET.get('page'))
+    return render(request, 'notifications.html', {'notifs': page_obj, 'page_obj': page_obj})
 
 
 # ── Админ: меню ──

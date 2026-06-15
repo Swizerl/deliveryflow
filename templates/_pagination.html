@@ -1,0 +1,15 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="pagination" style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:1.25rem">
+    {% if page_obj.has_previous %}
+    <a class="btn btn-outline btn-sm" href="?page={{ page_obj.previous_page_number }}">← Назад</a>
+    {% else %}
+    <span class="btn btn-outline btn-sm" style="opacity:.4;pointer-events:none">← Назад</span>
+    {% endif %}
+    <span style="font-size:.9rem;color:var(--muted)">Стр. {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a class="btn btn-outline btn-sm" href="?page={{ page_obj.next_page_number }}">Вперёд →</a>
+    {% else %}
+    <span class="btn btn-outline btn-sm" style="opacity:.4;pointer-events:none">Вперёд →</span>
+    {% endif %}
+</div>
+{% endif %}

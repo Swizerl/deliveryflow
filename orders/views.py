@@ -1,6 +1,7 @@
 from django.core.cache import cache
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -39,12 +40,19 @@ class CreateOrderView(APIView):
         )
 
 
+class OrderListPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
 class OrderListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = OrderSerializer
+    pagination_class = OrderListPagination
 
     def get_queryset(self):
-        qs = Order.objects.prefetch_related('items__product')
+        qs = Order.objects.select_related('user').prefetch_related('items__product')
         if user_is_admin(self.request.user):
             return qs
         return qs.filter(user=self.request.user)

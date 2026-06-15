@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}DeliveryFlow — Система обработки заказов{% endblock %}
+{% block title %}DeliveryFlow — Доставка вкусной еды{% endblock %}
 {% block extra_css %}<style>.page{padding:0}</style>{% endblock %}
 {% block content %}
 <div class="hero" style="margin:-2.5rem 0 0;width:100vw;margin-left:calc(50% - 50vw);">
     <div class="container">
-        <p class="hero-kicker">Дипломный проект</p>
+        <p class="hero-kicker">Доставка еды по городу</p>
         <h1>Delivery<span style="color:var(--accent)">Flow</span></h1>
-        <p class="hero-text">Система обработки и сопровождения заказов доставки продукции на базе RabbitMQ</p>
+        <p class="hero-text">Любимые блюда из ресторана — свежие, горячие и быстро у вашей двери</p>
         <div class="hero-actions">
             <a href="{% url 'menu' %}" class="btn btn-primary btn-lg">Перейти к меню</a>
             {% if not user.is_authenticated %}
@@ -17,24 +17,24 @@
 </div>
 <div class="features" style="width:min(1120px,92vw);margin:0 auto">
     <div class="feature-card">
-        <span class="feature-icon">📋</span>
-        <h3>Каталог товаров</h3>
-        <p>Выбирайте товары из каталога и добавляйте в корзину одним нажатием</p>
+        <span class="feature-icon">🍱</span>
+        <h3>Меню на любой вкус</h3>
+        <p>Роллы, горячие блюда, супы, салаты и десерты — собирайте заказ в пару кликов</p>
     </div>
     <div class="feature-card">
-        <span class="feature-icon">⚡</span>
-        <h3>Асинхронная обработка</h3>
-        <p>Заказы обрабатываются через очередь RabbitMQ и Celery-воркеры</p>
+        <span class="feature-icon">🛵</span>
+        <h3>Быстрая доставка</h3>
+        <p>Готовим и привозим заказ горячим — без долгого ожидания у двери</p>
     </div>
     <div class="feature-card">
         <span class="feature-icon">🔔</span>
-        <h3>Real-time обновления</h3>
-        <p>Статус заказа обновляется в реальном времени через WebSocket</p>
+        <h3>Статус заказа онлайн</h3>
+        <p>Следите за заказом в реальном времени: принят, готовится, уже в пути</p>
     </div>
     <div class="feature-card">
-        <span class="feature-icon">📊</span>
-        <h3>Аналитика</h3>
-        <p>Панель аналитики с данными о заказах, выручке и популярных товарах</p>
+        <span class="feature-icon">🥗</span>
+        <h3>Свежие продукты</h3>
+        <p>Каждое блюдо готовится из свежих ингредиентов в день заказа</p>
     </div>
 </div>
 {% endblock %}
